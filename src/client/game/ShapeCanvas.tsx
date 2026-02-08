@@ -285,17 +285,48 @@ export function ShapeCanvas({ shape, size, label, animated = false }: ShapeCanva
   }, [shape, size, animated, drawShape]);
 
   return (
-    <div className="shape-canvas-container" style={{ textAlign: 'center' }}>
+    <div className="shape-canvas-container" style={{ textAlign: 'center', position: 'relative' }}>
       {label && <div className="shape-label">{label}</div>}
-      <canvas
-        ref={canvasRef}
-        style={{
-          width: size,
-          height: size,
-          borderRadius: '12px',
-          background: 'transparent',
-        }}
-      />
+      <div className="canvas-wrapper" style={{ position: 'relative', display: 'inline-block' }}>
+        <canvas
+          ref={canvasRef}
+          style={{
+            width: size,
+            height: size,
+            borderRadius: '16px',
+            background: 'transparent',
+          }}
+        />
+        {/* Floating particles effect */}
+        {animated && (
+          <div className="particles" style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            overflow: 'hidden',
+            borderRadius: '16px',
+          }}>
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="particle"
+                style={{
+                  position: 'absolute',
+                  width: '4px',
+                  height: '4px',
+                  borderRadius: '50%',
+                  background: SHAPE_COLORS[shape.colorIndex] ?? '#FF6B6B',
+                  opacity: 0.6,
+                  left: `${20 + (i * 12)}%`,
+                  animation: `float ${2 + (i * 0.3)}s ease-in-out infinite`,
+                  animationDelay: `${i * 0.2}s`,
+                  boxShadow: `0 0 10px ${SHAPE_COLORS[shape.colorIndex] ?? '#FF6B6B'}`,
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
