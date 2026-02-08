@@ -360,8 +360,9 @@ async function getPlayerRank(dateString: string, visitorId: string): Promise<num
 // API Routes
 // ============================================
 
-// Set to true during testing to allow replaying
-const TESTING_MODE = true;
+// Testing mode (playtest/dev subreddit) allows replaying and relaxes postId checks
+const isDevSubreddit = context.subredditName === 'shapeswifter_dev';
+const TESTING_MODE = process.env.TESTING_MODE === 'true' || isDevSubreddit;
 
 router.get<object, InitResponse | { status: string; message: string }>(
   '/api/init',
@@ -395,7 +396,7 @@ router.get<object, InitResponse | { status: string; message: string }>(
         await savePlayerStats(playerStats);
       }
 
-      // In testing mode, always allow playing
+      // In production installs, gate daily play to once per user; allow replays only in testing
       const alreadyPlayed = TESTING_MODE ? false : (todayScore !== null);
 
       res.json({
@@ -439,7 +440,7 @@ router.post<object, SubmitScoreResponse | { status: string; message: string }, S
 
       // Check if already played
       const existing = await getTodayScore(visitorId, dateString);
-      if (existing) {
+      if (existing && !TESTING_MODE) {
         res.status(400).json({
           status: 'error',
           message: 'Already played today',
