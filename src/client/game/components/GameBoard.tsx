@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { ShapeState, MORPHABLE_SHAPES, SHAPE_COLORS } from '../../../shared/types/api';
 import ShapeCanvas from '../ShapeCanvas';
 
@@ -10,16 +9,29 @@ interface GameBoardProps {
 }
 
 // Generate hints about what's different (no color)
-function getDifferenceHints(current: ShapeState, target: ShapeState): string[] {
+export function getDifferenceHints(current: ShapeState, target: ShapeState): string[] {
   const hints: string[] = [];
+
+  const getSides = (shape: ShapeState): number | null => {
+    switch (shape.type) {
+      case 'triangle': return 3;
+      case 'square': return 4;
+      case 'pentagon': return 5;
+      case 'hexagon': return 6;
+      case 'octagon': return 8;
+      default: return null; // star / arrow not part of morph hints
+    }
+  };
   
   if (current.type !== target.type) {
-    const currentSides = MORPHABLE_SHAPES.indexOf(current.type) + 3;
-    const targetSides = MORPHABLE_SHAPES.indexOf(target.type) + 3;
-    if (targetSides > currentSides) {
-      hints.push(`⬡ +${targetSides - currentSides} sides`);
-    } else {
-      hints.push(`△ -${currentSides - targetSides} sides`);
+    const currentSides = getSides(current);
+    const targetSides = getSides(target);
+    if (currentSides && targetSides) {
+      if (targetSides > currentSides) {
+        hints.push(`⬡ +${targetSides - currentSides} sides`);
+      } else {
+        hints.push(`△ -${currentSides - targetSides} sides`);
+      }
     }
   }
   
@@ -44,7 +56,6 @@ function getDifferenceHints(current: ShapeState, target: ShapeState): string[] {
 }
 
 export function GameBoard({ startShape, targetShape, currentShape, isMatch }: GameBoardProps) {
-  const [showHints, setShowHints] = useState(false);
   const hints = getDifferenceHints(currentShape, targetShape);
   
   return (
@@ -75,26 +86,6 @@ export function GameBoard({ startShape, targetShape, currentShape, isMatch }: Ga
         />
       </div>
 
-      {/* Helpful hints - only shown when hint button is pressed */}
-      {!isMatch && hints.length > 0 && (
-        <div className="hint-section">
-          <button 
-            className={`hint-button ${showHints ? 'active' : ''}`}
-            onClick={() => setShowHints(!showHints)}
-          >
-            💡 {showHints ? 'Hide Hints' : 'Show Hints'}
-          </button>
-          {showHints && (
-            <div className="difference-hints">
-              <span className="hints-label">Need:</span>
-              {hints.map((hint, i) => (
-                <span key={i} className="hint-badge">{hint}</span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-      
       {isMatch && (
         <div className="match-indicator">
           ✓ Perfect Match!

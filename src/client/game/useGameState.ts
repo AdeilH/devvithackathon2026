@@ -156,7 +156,7 @@ export function useGameState() {
     const isWin = shapesMatch(currentShape, puzzle.targetShape);
     console.log('Is win:', isWin, 'movesUsed:', movesUsed, 'timeRemaining:', timeRemaining);
     
-    if (isWin && movesUsed > 0) {
+    if (isWin) {
       console.log('WIN DETECTED!');
       stopTimer();
       

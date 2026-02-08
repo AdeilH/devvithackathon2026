@@ -2,13 +2,13 @@
 // Shape Types
 // ============================================
 
-export type ShapeType = 'triangle' | 'square' | 'pentagon' | 'hexagon' | 'star' | 'arrow';
+export type ShapeType = 'triangle' | 'square' | 'pentagon' | 'hexagon' | 'octagon' | 'star' | 'arrow';
 
 export type ShapeColor = '#FF6B6B' | '#4ECDC4' | '#FFE66D' | '#A29BFE' | '#55EFC4' | '#FD79A8';
 
 export const SHAPE_COLORS: ShapeColor[] = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#A29BFE', '#55EFC4', '#FD79A8'];
 
-export const SHAPE_TYPES: ShapeType[] = ['triangle', 'square', 'pentagon', 'hexagon', 'star', 'arrow'];
+export const SHAPE_TYPES: ShapeType[] = ['triangle', 'square', 'pentagon', 'hexagon', 'octagon', 'star', 'arrow'];
 
 export interface ShapeState {
   type: ShapeType;
@@ -38,8 +38,8 @@ export interface Transform {
   icon: string;
 }
 
-// Shape morphing order: triangle ↔ square ↔ pentagon ↔ hexagon
-export const MORPHABLE_SHAPES: ShapeType[] = ['triangle', 'square', 'pentagon', 'hexagon'];
+// Shape morphing order: triangle ↔ square ↔ pentagon ↔ hexagon ↔ octagon
+export const MORPHABLE_SHAPES: ShapeType[] = ['triangle', 'square', 'pentagon', 'hexagon', 'octagon'];
 
 export const TRANSFORMS: Transform[] = [
   { type: 'rotate_cw', label: 'Rotate CW', emoji: '🔄', icon: '↻' },

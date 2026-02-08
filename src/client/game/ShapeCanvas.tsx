@@ -37,6 +37,14 @@ const SHAPE_POLYGONS: Record<ShapeType, number[][]> = {
     }
     return points;
   })(),
+  octagon: (() => {
+    const points: number[][] = [];
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * 2 * Math.PI) / 8 + Math.PI / 8; // keep flat sides
+      points.push([Math.cos(angle), Math.sin(angle)]);
+    }
+    return points;
+  })(),
   star: (() => {
     const points: number[][] = [];
     for (let i = 0; i < 10; i++) {
@@ -150,18 +158,26 @@ export function ShapeCanvas({ shape, size, label, animated = false }: ShapeCanva
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // Draw highlight (inner light reflection)
+    // Draw sharp pointy white dot at highlight hotspot (top-left glow center)
     ctx.save();
-    ctx.globalCompositeOperation = 'overlay';
-    const highlightGradient = ctx.createRadialGradient(
-      -baseRadius * 0.4, -baseRadius * 0.4, 0,
-      0, 0, baseRadius
+    ctx.globalCompositeOperation = 'lighter';
+    const dotSize = baseRadius * 0.07;
+    // Align with blur hotspot (upper-left) but keep comfortably inside the fill
+    const anchorX = -baseRadius * 0.2;
+    const anchorY = -baseRadius * 0.2;
+
+    const dotGradient = ctx.createRadialGradient(
+      anchorX, anchorY, 0,
+      anchorX, anchorY, dotSize
     );
-    highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
-    highlightGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)');
-    highlightGradient.addColorStop(1, 'rgba(0, 0, 0, 0.1)');
-    drawPath();
-    ctx.fillStyle = highlightGradient;
+    dotGradient.addColorStop(0, '#FFFFFF');
+    dotGradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.95)');
+    dotGradient.addColorStop(0.85, 'rgba(255, 255, 255, 0.3)');
+    dotGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    
+    ctx.beginPath();
+    ctx.arc(anchorX, anchorY, dotSize, 0, Math.PI * 2);
+    ctx.fillStyle = dotGradient;
     ctx.fill();
     ctx.restore();
 
@@ -315,12 +331,12 @@ export function ShapeCanvas({ shape, size, label, animated = false }: ShapeCanva
                   width: '4px',
                   height: '4px',
                   borderRadius: '50%',
-                  background: SHAPE_COLORS[shape.colorIndex] ?? '#FF6B6B',
-                  opacity: 0.6,
+                  background: '#ffffff',
+                  opacity: 0.9,
                   left: `${20 + (i * 12)}%`,
                   animation: `float ${2 + (i * 0.3)}s ease-in-out infinite`,
                   animationDelay: `${i * 0.2}s`,
-                  boxShadow: `0 0 10px ${SHAPE_COLORS[shape.colorIndex] ?? '#FF6B6B'}`,
+                  boxShadow: 'none',
                 }}
               />
             ))}

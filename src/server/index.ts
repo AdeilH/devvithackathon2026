@@ -421,8 +421,9 @@ router.post<object, SubmitScoreResponse | { status: string; message: string }, S
   '/api/submit-score',
   async (req, res): Promise<void> => {
     const { postId } = context;
-    
-    if (!postId) {
+
+    // In testing / webview mode, allow submission even if postId is missing
+    if (!postId && !TESTING_MODE) {
       res.status(400).json({
         status: 'error',
         message: 'postId is required',

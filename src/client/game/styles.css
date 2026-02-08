@@ -513,7 +513,7 @@
 }
 
 .particle {
-  filter: blur(1px);
+  filter: none;
 }
 
 /* Status Bar */

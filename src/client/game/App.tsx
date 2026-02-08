@@ -10,6 +10,7 @@ import {
   GameBoard,
   AlreadyPlayed 
 } from './components';
+import { getDifferenceHints } from './components/GameBoard';
 import { LeaderboardResponse } from '../../shared/types/api';
 import './styles.css';
 
@@ -141,6 +142,7 @@ export const App = () => {
       {state.screen === 'lose' && (
         <LoseModal
           reason={state.timeRemaining <= 0 ? 'time' : 'moves'}
+          hints={getDifferenceHints(state.currentShape, state.puzzle.targetShape)}
           onRetry={() => actions.initialize()}
         />
       )}

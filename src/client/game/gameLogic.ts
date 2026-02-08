@@ -125,56 +125,102 @@ export function applyTransform(shape: ShapeState, transform: TransformType): Sha
 // ============================================
 
 export function shapesMatch(a: ShapeState, b: ShapeState): boolean {
-  // Type must match
-  if (a.type !== b.type) {
-    console.log('Type mismatch:', a.type, '!=', b.type);
-    return false;
-  }
+  // Structural checks
+  if (a.type !== b.type) return false;
+  if (a.colorIndex !== b.colorIndex) return false;
 
-  // Color must match
-  if (a.colorIndex !== b.colorIndex) {
-    console.log('Color mismatch:', a.colorIndex, '!=', b.colorIndex);
-    return false;
-  }
+  // Normalize flips for symmetric shapes (flips are visually invariant)
+  const normA = normalizeFlips(a);
+  const normB = normalizeFlips(b);
+  if (normA.flippedH !== normB.flippedH) return false;
+  if (normA.flippedV !== normB.flippedV) return false;
 
-  // Flip states must match
-  if (a.flippedH !== b.flippedH) {
-    console.log('FlippedH mismatch:', a.flippedH, '!=', b.flippedH);
-    return false;
-  }
-  if (a.flippedV !== b.flippedV) {
-    console.log('FlippedV mismatch:', a.flippedV, '!=', b.flippedV);
-    return false;
-  }
+  // Scale tolerance (visual scale only, no scale transforms exist currently)
+  if (Math.abs(a.scale - b.scale) > 0.005) return false;
 
-  // Rotation comparison with symmetry normalization
-  const normalizedRotationA = normalizeRotation(a);
-  const normalizedRotationB = normalizeRotation(b);
-  if (normalizedRotationA !== normalizedRotationB) {
-    console.log('Rotation mismatch:', normalizedRotationA, '!=', normalizedRotationB, '(raw:', a.rotation, b.rotation, ')');
-    return false;
-  }
+  // Rotation normalized to shape symmetry and rounded to avoid float jitter
+  const rotA = Math.round(normalizeRotation(a) * 1000) / 1000;
+  const rotB = Math.round(normalizeRotation(b) * 1000) / 1000;
+  if (rotA !== rotB) return false;
 
-  console.log('SHAPES MATCH!');
   return true;
 }
 
+function normalizeFlips(shape: ShapeState): { flippedH: boolean; flippedV: boolean } {
+  const symmetricTypes: ShapeType[] = ['square', 'hexagon', 'octagon'];
+  if (symmetricTypes.includes(shape.type)) {
+    return { flippedH: false, flippedV: false };
+  }
+  return { flippedH: shape.flippedH, flippedV: shape.flippedV };
+}
+
 function normalizeRotation(shape: ShapeState): number {
-  // For square, 90-degree rotational symmetry (4-fold)
-  if (shape.type === 'square') {
-    return shape.rotation % 90;
+  if (shape.type === 'square') return shape.rotation % 90;
+  if (shape.type === 'hexagon') return shape.rotation % 60;
+  if (shape.type === 'octagon') return shape.rotation % 45;
+  if (shape.type === 'triangle') return shape.rotation % 120;
+  return shape.rotation % 360;
+}
+
+function getBasePolygon(type: ShapeType): number[][] {
+  switch (type) {
+    case 'triangle':
+      return [
+        [0, -1],
+        [0.866, 0.5],
+        [-0.866, 0.5],
+      ];
+    case 'square':
+      return [
+        [-0.707, -0.707],
+        [0.707, -0.707],
+        [0.707, 0.707],
+        [-0.707, 0.707],
+      ];
+    case 'pentagon': {
+      const pts: number[][] = [];
+      for (let i = 0; i < 5; i++) {
+        const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+        pts.push([Math.cos(angle), Math.sin(angle)]);
+      }
+      return pts;
+    }
+    case 'hexagon': {
+      const pts: number[][] = [];
+      for (let i = 0; i < 6; i++) {
+        const angle = (i * 2 * Math.PI) / 6;
+        pts.push([Math.cos(angle), Math.sin(angle)]);
+      }
+      return pts;
+    }
+    case 'octagon': {
+      const pts: number[][] = [];
+      for (let i = 0; i < 8; i++) {
+        const angle = (i * 2 * Math.PI) / 8 + Math.PI / 8;
+        pts.push([Math.cos(angle), Math.sin(angle)]);
+      }
+      return pts;
+    }
+    case 'star': {
+      const pts: number[][] = [];
+      for (let i = 0; i < 10; i++) {
+        const angle = (i * Math.PI) / 5 - Math.PI / 2;
+        const radius = i % 2 === 0 ? 1 : 0.5;
+        pts.push([Math.cos(angle) * radius, Math.sin(angle) * radius]);
+      }
+      return pts;
+    }
+    case 'arrow':
+      return [
+        [0, -1],
+        [0.5, 0],
+        [0.25, 0],
+        [0.25, 1],
+        [-0.25, 1],
+        [-0.25, 0],
+        [-0.5, 0],
+      ];
   }
-  // For hexagon, 60-degree rotational symmetry (6-fold)  
-  if (shape.type === 'hexagon') {
-    return shape.rotation % 60;
-  }
-  // For triangle, 120-degree rotational symmetry (3-fold)
-  if (shape.type === 'triangle') {
-    return shape.rotation % 120;
-  }
-  // Pentagon has 72-degree symmetry but we rotate by 90, so no simplification
-  // Star and arrow have no rotational symmetry for our purposes
-  return shape.rotation;
 }
 
 // ============================================
@@ -206,26 +252,24 @@ export function generatePuzzle(dateString: string): Puzzle {
     colorIndex: startColorIndex,
   };
 
-  // Define transform categories to ensure variety
-  type TransformCategory = 'rotation' | 'flip' | 'scale' | 'morph' | 'color';
+  // Define transform categories to ensure variety (only moves the UI supports)
+  type TransformCategory = 'rotation' | 'flip' | 'morph';
   const transformsByCategory: Record<TransformCategory, TransformType[]> = {
     rotation: ['rotate_cw', 'rotate_ccw'],
     flip: ['flip_h', 'flip_v'],
-    scale: ['scale_up', 'scale_down'],
     morph: ['morph_up', 'morph_down'],
-    color: ['color'],
   };
 
   // Ensure puzzle uses multiple categories for variety
-  const categories: TransformCategory[] = ['rotation', 'flip', 'scale', 'morph', 'color'];
+  const categories: TransformCategory[] = ['rotation', 'flip', 'morph'];
   
-  // Pick 3-4 different categories to use
-  const numCategories = rng.nextInt(3, 4);
+  // Pick 2-3 different categories to use (fits move limit/UI)
+  const numCategories = rng.nextInt(2, 3);
   const shuffledCategories = rng.shuffle([...categories]);
   const selectedCategories = shuffledCategories.slice(0, numCategories);
 
-  // Number of transforms: 4-6 for a good challenge
-  const numTransforms = rng.nextInt(4, Math.min(6, baseDifficulty + 2));
+  // Number of transforms: 3-5 for a good challenge within controls
+  const numTransforms = rng.nextInt(3, Math.min(5, baseDifficulty + 2));
 
   let targetShape = { ...startShape };
   const appliedTransforms: TransformType[] = [];
@@ -269,7 +313,7 @@ export function generatePuzzle(dateString: string): Puzzle {
 
   // Ensure at least 3 transforms
   while (appliedTransforms.length < 3) {
-    const fallbackTransforms: TransformType[] = ['rotate_cw', 'flip_h', 'color'];
+    const fallbackTransforms: TransformType[] = ['rotate_cw', 'flip_h', 'morph_up'];
     for (const transform of fallbackTransforms) {
       if (appliedTransforms.length >= 3) break;
       if (canApplyTransform(targetShape, transform)) {
